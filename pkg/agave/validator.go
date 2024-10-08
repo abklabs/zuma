@@ -20,41 +20,48 @@ type KeyPairs struct {
 	VoteAccount string `pulumi:"voteAccount" provider:"secret"`
 }
 
-type InstallCommand struct {
-	runner.Command
-	Flags    Flags
-	KeyPairs KeyPairs
-}
-
-func (cmd *InstallCommand) Env() map[string]string {
-	return map[string]string{
-		"VALIDATOR_FLAGS":      strings.Join(cmd.Flags.toArgs(), " "),
-		"IDENTITY_KEYPAIR":     cmd.KeyPairs.Identity,
-		"VOTE_ACCOUNT_KEYPAIR": cmd.KeyPairs.VoteAccount,
-	}
-}
-
-func (cmd *InstallCommand) Script() string {
-	return InstallScript
-}
-
-type ValidatorPaths struct {
-	Accounts string `pulumi:"accounts"`
-	Ledger   string `pulumi:"ledger"`
-	Log      string `pulumi:"log"`
+type Metrics struct {
+	SolanaMetricsURL string `pulumi:"solanaMetricsURL,optional"`
 }
 
 type Agave struct {
 	validator.Client
 	KeyPairs KeyPairs
 	Flags    Flags
+	Metrics  *Metrics `pulumi:"metrics,optional"`
 }
 
 func (agave *Agave) Install() runner.Command {
 	return &InstallCommand{
 		Flags:    agave.Flags,
 		KeyPairs: agave.KeyPairs,
+		Metrics:  agave.Metrics,
 	}
+}
+
+type InstallCommand struct {
+	runner.Command
+	Flags    Flags
+	KeyPairs KeyPairs
+	Metrics  *Metrics
+}
+
+func (cmd *InstallCommand) Env() map[string]string {
+	env := map[string]string{
+		"VALIDATOR_FLAGS":      strings.Join(cmd.Flags.toArgs(), " "),
+		"IDENTITY_KEYPAIR":     cmd.KeyPairs.Identity,
+		"VOTE_ACCOUNT_KEYPAIR": cmd.KeyPairs.VoteAccount,
+	}
+	
+	if cmd.Metrics != nil && cmd.Metrics.SolanaMetricsURL != "" {
+		env["SOLANA_METRICS_CONFIG"] = cmd.Metrics.SolanaMetricsURL
+	}
+	
+	return env
+}
+
+func (cmd *InstallCommand) Script() string {
+	return InstallScript
 }
 
 type Flags struct {
