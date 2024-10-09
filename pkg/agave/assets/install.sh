@@ -80,8 +80,12 @@ step::80::setup-validator-startup() {
 
   cat <<EOF | $SUDO tee /home/sol/run-validator >/dev/null
 #!/usr/bin/env bash
+
+export SOLANA_METRICS_CONFIG="${SOLANA_METRICS_CONFIG:-}"
+
 exec agave-validator $VALIDATOR_FLAGS
 EOF
+
   $SUDO chmod 755 /home/sol/run-validator
   $SUDO chown sol:sol /home/sol/run-validator
 
@@ -98,6 +102,7 @@ LimitNOFILE=1000000
 [Install]
 WantedBy=default.target
 EOF
+
   $SUDO systemctl daemon-reload
   $SUDO systemctl enable svmkit-agave-validator.service
   $SUDO systemctl start svmkit-agave-validator.service

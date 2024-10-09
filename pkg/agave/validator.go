@@ -20,11 +20,25 @@ type KeyPairs struct {
 	VoteAccount string `pulumi:"voteAccount" provider:"secret"`
 }
 
+type Metrics struct {
+	SolanaMetricsURL string `pulumi:"solanaMetricsURL,optional"`
+}
+
+func (agave *Agave) Install() runner.Command {
+	return &InstallCommand{
+		Flags:    agave.Flags,
+		KeyPairs: agave.KeyPairs,
+		Version:  agave.Version,
+		Metrics:  agave.Metrics,
+	}
+}
+
 type InstallCommand struct {
 	runner.Command
 	Flags    Flags
 	KeyPairs KeyPairs
 	Version  validator.Version
+	Metrics  *Metrics
 }
 
 func (cmd *InstallCommand) Env() map[string]string {
@@ -36,6 +50,10 @@ func (cmd *InstallCommand) Env() map[string]string {
 
 	if cmd.Version != nil {
 		env["VALIDATOR_VERSION"] = *cmd.Version
+	}
+
+	if cmd.Metrics != nil && cmd.Metrics.SolanaMetricsURL != "" {
+		env["SOLANA_METRICS_CONFIG"] = cmd.Metrics.SolanaMetricsURL
 	}
 
 	return env
@@ -56,14 +74,7 @@ type Agave struct {
 	Version  validator.Version `pulumi:"version,optional"`
 	KeyPairs KeyPairs          `pulumi:"keyPairs" provider:"secret"`
 	Flags    Flags             `pulumi:"flags"`
-}
-
-func (agave *Agave) Install() runner.Command {
-	return &InstallCommand{
-		Flags:    agave.Flags,
-		KeyPairs: agave.KeyPairs,
-		Version:  agave.Version,
-	}
+	Metrics  *Metrics          `pulumi:"metrics,optional"`
 }
 
 type Flags struct {
